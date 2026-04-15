@@ -4,11 +4,14 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bitácora L3 · L7</title>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-<meta name="theme-color" content="#e10600">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <meta name="theme-color" content="#e10600">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="L3·L7">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg:    #f0f0f0;
@@ -46,6 +49,8 @@
 
     /* MODO BADGE */
     .modo-badge{font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;letter-spacing:.5px;cursor:pointer;border:none;transition:all .15s;}
+    .btn-actualizar{font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 10px;border-radius:3px;letter-spacing:.5px;cursor:pointer;border:1px solid #444;background:transparent;color:#aaa;transition:all .15s;}
+    .btn-actualizar:hover{border-color:#fff;color:#fff;}
     .modo-badge.escritura{background:rgba(225,6,0,.2);color:#ff6b6b;border:1px solid rgba(225,6,0,.4);}
     .modo-badge.lectura{background:rgba(0,122,61,.15);color:#4dbb87;border:1px solid rgba(0,122,61,.4);}
 
@@ -211,6 +216,7 @@
   <div class="hdr-right">
     <span class="sync-dot" id="syncDot" title="Estado de sincronización"></span>
     <span class="hdr-stat" id="hdrStat"></span>
+    <button class="btn-actualizar" id="btnActualizar" title="Recargar datos">🔄 Actualizar</button>
     <button class="modo-badge escritura" id="modoBtn" title="Cambiar modo">✏️ ESCRITURA</button>
   </div>
 </header>
@@ -350,8 +356,8 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
-    getFirestore, collection, doc, setDoc, deleteDoc,
-    onSnapshot, query, orderBy, writeBatch, serverTimestamp
+    getFirestore, collection, doc, setDoc, getDoc, deleteDoc,
+    getDocs, query, orderBy, writeBatch, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   // ══ FIREBASE ══
@@ -737,26 +743,41 @@
     });
   });
 
-  // ══ LISTENERS FIREBASE EN TIEMPO REAL ══
-  // Turnos
-  onSnapshot(query(TURNOS_COL, orderBy("fecha","desc")), snap => {
-    turnos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-    setSyncDot("ok");
-    renderTurnos();
-    applyMode();
-  }, err => {
-    setSyncDot("err");
-    console.error("Error Firebase turnos:", err);
-    document.getElementById("loadingTurnos").innerHTML = `<p style="color:var(--dang)">Error al conectar: ${err.message}</p>`;
-  });
+  // ══ CARGAR DATOS (getDocs — una sola lectura) ══
+  async function cargarDatos() {
+    setSyncDot("syncing");
+    try {
+      // Turnos
+      const snap = await getDocs(query(TURNOS_COL, orderBy("fecha","desc")));
+      turnos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      renderTurnos();
+      applyMode();
 
-  // Análisis
-  onSnapshot(ANAL_DOC, snap => {
-    renderAnalisis(snap.exists() ? snap.data() : null);
-  }, err => console.error("Error Firebase análisis:", err));
+      // Análisis
+      const analSnap = await getDoc(ANAL_DOC);
+      renderAnalisis(analSnap.exists() ? analSnap.data() : null);
+
+      setSyncDot("ok");
+    } catch(e) {
+      setSyncDot("err");
+      console.error("Error Firebase:", e);
+      document.getElementById("loadingTurnos").innerHTML =
+        `<p style="color:var(--dang);font-family:var(--mono);font-size:12px;padding:20px;">
+          Error al conectar con Firebase:<br>${e.message}
+        </p>`;
+    }
+  }
+
+  // Botón actualizar manual
+  document.getElementById("btnActualizar").addEventListener("click", () => {
+    document.getElementById("loadingTurnos").style.display = "";
+    document.getElementById("turnosList").innerHTML = "";
+    cargarDatos();
+  });
 
   // ══ INICIO ══
   applyMode();
+  cargarDatos();
 </script>
 </body>
 </html>
