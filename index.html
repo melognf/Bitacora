@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bitácora L3 · L7</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:    #f0f0f0;
+      --s1:    #ffffff;
+      --s2:    #f5f5f5;
+      --b1:    #dddddd;
+      --b2:    #cccccc;
+      --negro: #000000;
+      --t1:    #000000;
+      --t2:    #222222;
+      --t3:    #555555;
+      --t4:    #999999;
+      --red:   #e10600;
+      --red2:  #b80000;
+      --l3:    #0057b8;
+      --l7:    #007a3d;
+      --warn:  #c47a00;
+      --dang:  #cc0000;
+      --purp:  #6b21a8;
+      --mono:  'IBM Plex Mono', monospace;
+      --sans:  'IBM Plex Sans', sans-serif;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;}
+
+    /* ── HEADER ── */
+    .hdr{height:52px;background:var(--negro);border-bottom:3px solid var(--red);display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+    .hdr-left{display:flex;align-items:center;gap:12px;}
+    .bl{font-family:var(--mono);font-size:10px;font-weight:600;padding:3px 8px;border-radius:3px;letter-spacing:.5px;}
+    .bl3{background:rgba(0,87,184,.2);color:#4da6ff;border:1px solid rgba(0,87,184,.4);}
+    .bl7{background:rgba(0,122,61,.2);color:#4dbb87;border:1px solid rgba(0,122,61,.4);}
+    .hdr-title{font-family:var(--mono);font-size:13px;font-weight:600;color:#fff;letter-spacing:.5px;}
+    .hdr-right{display:flex;align-items:center;gap:10px;}
+    .hdr-stat{font-family:var(--mono);font-size:11px;color:#aaa;}
+
+    /* MODO BADGE */
+    .modo-badge{font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;letter-spacing:.5px;cursor:pointer;border:none;transition:all .15s;}
+    .modo-badge.escritura{background:rgba(225,6,0,.2);color:#ff6b6b;border:1px solid rgba(225,6,0,.4);}
+    .modo-badge.lectura{background:rgba(0,122,61,.15);color:#4dbb87;border:1px solid rgba(0,122,61,.4);}
+
+    /* SYNC INDICATOR */
+    .sync-dot{width:7px;height:7px;border-radius:50%;background:#555;display:inline-block;transition:background .3s;}
+    .sync-dot.syncing{background:var(--warn);animation:pulse .8s infinite;}
+    .sync-dot.ok{background:var(--l7);}
+    .sync-dot.err{background:var(--dang);}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+    /* ── MAIN TABS ── */
+    .main-tabs{background:var(--negro);border-bottom:1px solid #333;display:flex;padding:0 20px;}
+    .mtab{font-family:var(--mono);font-size:12px;font-weight:500;padding:11px 18px;border:none;background:none;color:#777;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;letter-spacing:.3px;}
+    .mtab:hover{color:#ccc;}
+    .mtab.active{color:#fff;border-bottom-color:var(--red);}
+    .mview{display:none;}
+    .mview.active{display:block;}
+
+    /* ── LAYOUT CARGA ── */
+    .carga-layout{display:grid;grid-template-columns:400px 1fr;min-height:calc(100vh - 90px);}
+
+    /* ── FORM PANEL ── */
+    .form-panel{background:var(--s1);border-right:2px solid var(--negro);padding:20px;display:flex;flex-direction:column;gap:14px;position:sticky;top:90px;height:calc(100vh - 90px);overflow-y:auto;}
+    .sec-title{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--negro);letter-spacing:2px;text-transform:uppercase;padding-bottom:8px;border-bottom:2px solid var(--negro);}
+    .fg{display:flex;flex-direction:column;gap:5px;}
+    .fg label{font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;font-weight:600;}
+    .ftarea{background:var(--s2);border:1px solid var(--b1);border-radius:4px;color:var(--t1);padding:10px 12px;font-family:var(--mono);font-size:11px;line-height:1.7;resize:vertical;min-height:240px;width:100%;outline:none;transition:border-color .15s;}
+    .ftarea:focus{border-color:var(--red);box-shadow:0 0 0 2px rgba(225,6,0,.1);}
+    .ftarea::placeholder{color:var(--t4);}
+
+    .hint{background:#fff8f8;border:1px solid #ffd0cd;border-left:3px solid var(--red);border-radius:4px;padding:10px 12px;font-family:var(--mono);font-size:10px;color:var(--t2);line-height:1.9;}
+    .hint b{color:var(--negro);}
+    .hint .cmd{color:var(--l7);font-weight:600;}
+
+    .btn-save{background:var(--red);color:#fff;border:none;border-radius:4px;padding:11px;font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:1px;cursor:pointer;width:100%;transition:background .15s,transform .1s;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:8px;}
+    .btn-save:hover{background:var(--red2);}
+    .btn-save:active{transform:scale(.98);}
+    .btn-save:disabled{opacity:.4;cursor:wait;}
+
+    /* SOLO LECTURA OVERLAY */
+    .readonly-overlay{display:none;background:#fffbf0;border:1px solid #fde68a;border-radius:4px;padding:10px 12px;font-family:var(--mono);font-size:11px;color:var(--warn);text-align:center;font-weight:600;}
+    .readonly-overlay.on{display:block;}
+
+    /* PREVIEW */
+    .preview-box{background:#f0fff4;border:1px solid #86efac;border-radius:4px;padding:10px 12px;display:none;}
+    .preview-box.on{display:block;}
+    .preview-title{font-family:var(--mono);font-size:10px;color:var(--l7);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;font-weight:700;}
+    .preview-item{font-family:var(--mono);font-size:11px;padding:4px 0;border-bottom:1px solid #d1fae5;display:flex;align-items:center;gap:8px;}
+    .preview-item:last-child{border-bottom:none;}
+    .pi-fecha{color:var(--t2);min-width:80px;}
+    .pi-turno{min-width:70px;font-weight:600;}
+    .pi-ev{color:var(--t3);}
+
+    .ok-msg{background:#f0fff4;border:1px solid #86efac;border-radius:4px;padding:9px 12px;font-family:var(--mono);font-size:11px;color:var(--l7);display:none;text-align:center;font-weight:600;}
+    .ok-msg.on{display:block;}
+    .err-msg{background:#fff0f0;border:1px solid #fca5a5;border-radius:4px;padding:9px 12px;font-family:var(--mono);font-size:11px;color:var(--dang);display:none;}
+    .err-msg.on{display:block;}
+
+    /* ── TURNOS PANEL ── */
+    .turnos-panel{padding:20px 24px 60px;}
+    .turnos-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+    .turnos-tit{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--negro);}
+    .btn-ghost{background:none;border:1px solid var(--b2);color:var(--t3);border-radius:4px;padding:5px 12px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;}
+    .btn-ghost:hover{border-color:var(--dang);color:var(--dang);}
+    .btn-ghost:disabled{opacity:.3;cursor:default;}
+
+    .t-empty{text-align:center;padding:80px 20px;}
+    .t-empty-ico{font-size:36px;opacity:.2;margin-bottom:12px;}
+    .t-empty-txt{font-family:var(--mono);font-size:12px;color:var(--t3);line-height:1.9;}
+
+    /* LOADING */
+    .loading-wrap{text-align:center;padding:60px 20px;}
+    .loading-wrap .spinner{width:28px;height:28px;border:3px solid var(--b1);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px;}
+    .loading-wrap p{font-family:var(--mono);font-size:11px;color:var(--t3);}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* ── TURNO CARD ── */
+    .tcard{background:var(--s1);border:2px solid var(--negro);border-radius:4px;margin-bottom:8px;overflow:hidden;transition:box-shadow .15s;}
+    .tcard:hover{box-shadow:0 4px 12px rgba(0,0,0,.12);}
+    .tcard-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;user-select:none;gap:10px;background:var(--negro);}
+    .tcard-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0;flex-wrap:wrap;}
+    .tbadge{font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 8px;border-radius:3px;white-space:nowrap;letter-spacing:.5px;}
+    .tba{background:rgba(0,87,184,.2);color:#4da6ff;border:1px solid rgba(0,87,184,.4);}
+    .tbb{background:rgba(196,122,0,.2);color:#fbbf24;border:1px solid rgba(196,122,0,.4);}
+    .tbc{background:rgba(107,33,168,.2);color:#c084fc;border:1px solid rgba(107,33,168,.4);}
+    .tbd{background:rgba(0,122,61,.2);color:#4dbb87;border:1px solid rgba(0,122,61,.4);}
+    .tbx{background:rgba(255,255,255,.1);color:#ccc;border:1px solid #444;}
+    .tnbadge{font-family:var(--mono);font-size:10px;padding:3px 7px;border-radius:3px;background:rgba(255,255,255,.1);color:#ccc;border:1px solid #444;}
+    .tfecha{font-size:13px;font-weight:700;color:#fff;}
+    .chips{display:flex;gap:5px;flex-wrap:wrap;}
+    .chip{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:.3px;font-weight:600;}
+    .ch-r{background:rgba(204,0,0,.15);color:#ff8080;border:1px solid rgba(204,0,0,.3);}
+    .ch-w{background:rgba(196,122,0,.15);color:#fbbf24;border:1px solid rgba(196,122,0,.3);}
+    .ch-g{background:rgba(0,122,61,.15);color:#4dbb87;border:1px solid rgba(0,122,61,.3);}
+    .tcard-right{display:flex;align-items:center;gap:8px;}
+    .btn-del{background:none;border:none;color:#666;font-size:15px;cursor:pointer;padding:2px 6px;transition:color .15s;line-height:1;}
+    .btn-del:hover{color:#ff6b6b;}
+    .ttoggle{font-size:12px;color:#888;transition:transform .2s;}
+    .tcard.open .ttoggle{transform:rotate(180deg);}
+    .tcard-body{display:none;padding:12px 14px 14px;border-top:1px solid var(--b1);background:var(--s1);}
+    .tcard.open .tcard-body{display:block;}
+    .eq-block{margin-top:10px;}
+    .eq-nombre{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--b1);padding-bottom:4px;}
+    .ldot{width:6px;height:6px;border-radius:50%;display:inline-block;}
+    .ld3{background:var(--l3);}
+    .ld7{background:var(--l7);}
+    .ev-item{background:var(--s2);border:1px solid var(--b1);border-radius:4px;padding:8px 12px;margin-bottom:4px;display:flex;gap:10px;align-items:flex-start;}
+    .ev-hora{font-family:var(--mono);font-size:11px;color:var(--red);white-space:nowrap;min-width:42px;font-weight:600;}
+    .ev-sev{font-size:13px;line-height:1.3;}
+    .ev-txt{font-size:13px;color:var(--t2);line-height:1.5;flex:1;}
+
+    /* ── LAYOUT ANÁLISIS ── */
+    .gen-layout{display:grid;grid-template-columns:340px 1fr;min-height:calc(100vh - 90px);}
+    .anal-panel{background:var(--s1);border-right:2px solid var(--negro);padding:20px;display:flex;flex-direction:column;gap:12px;position:sticky;top:90px;height:calc(100vh - 90px);overflow-y:auto;}
+    .anal-content{padding:24px 28px 60px;overflow-y:auto;}
+    .anal-fecha{font-family:var(--mono);font-size:10px;color:var(--t4);}
+
+    /* ── ANÁLISIS TEXTO ── */
+    .anal-texto-box{background:var(--s1);border:2px solid var(--negro);border-radius:4px;padding:28px 32px;font-family:var(--sans);font-size:14px;color:var(--t1);line-height:1.9;}
+    .anal-texto-box h1{font-size:18px;font-weight:700;color:var(--negro);margin:24px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--negro);}
+    .anal-texto-box h1:first-child{margin-top:0;}
+    .anal-texto-box h2{font-size:15px;font-weight:700;margin:18px 0 8px;padding:6px 10px;background:var(--negro);color:#fff;border-radius:3px;}
+    .anal-texto-box h3{font-size:13px;font-weight:700;color:var(--t2);margin:12px 0 6px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;}
+    .anal-texto-box strong{color:var(--negro);font-weight:700;}
+    .anal-texto-box hr{border:none;border-top:2px solid var(--negro);margin:20px 0;}
+    .anal-texto-box table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;}
+    .anal-texto-box th{background:var(--negro);color:#fff;padding:7px 10px;text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.5px;}
+    .anal-texto-box td{padding:7px 10px;border-bottom:1px solid var(--b1);color:var(--t1);}
+    .anal-texto-box tr:nth-child(even) td{background:var(--s2);}
+    .anal-texto-box ul,.anal-texto-box ol{padding-left:20px;margin:8px 0;}
+    .anal-texto-box li{margin:4px 0;color:var(--t1);}
+    .anal-texto-box code{font-family:var(--mono);font-size:11px;background:var(--s2);border:1px solid var(--b1);padding:2px 6px;border-radius:3px;color:var(--l7);font-weight:600;}
+    .anal-texto-box blockquote{border-left:3px solid var(--red);padding:8px 14px;margin:10px 0;background:#fff8f8;border-radius:0 4px 4px 0;}
+    .anal-texto-box p{margin:6px 0;color:var(--t1);}
+
+    /* ── GEN STATS ── */
+    .gen-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+    .gen-tit{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--negro);}
+    .btn-rean{background:var(--s2);color:var(--t2);border:1px solid var(--b2);border-radius:4px;padding:7px 14px;font-family:var(--mono);font-size:11px;font-weight:600;cursor:pointer;letter-spacing:.5px;transition:all .15s;display:flex;align-items:center;gap:6px;}
+    .btn-rean:hover{background:var(--red);color:#fff;border-color:var(--red);}
+    .btn-rean:disabled{opacity:.4;cursor:wait;}
+
+    .gen-empty{text-align:center;padding:80px 20px;}
+    .gen-empty-ico{font-size:36px;opacity:.2;margin-bottom:12px;}
+    .gen-empty-txt{font-family:var(--mono);font-size:12px;color:var(--t3);line-height:1.8;}
+
+    @media(max-width:768px){
+      .carga-layout,.gen-layout{grid-template-columns:1fr;}
+      .form-panel,.anal-panel{position:static;height:auto;}
+    }
+  </style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-left">
+    <div style="display:flex;gap:5px;">
+      <span class="bl bl3">L3</span>
+      <span class="bl bl7">L7</span>
+    </div>
+    <span class="hdr-title">Bitácora de Diagnósticos</span>
+  </div>
+  <div class="hdr-right">
+    <span class="sync-dot" id="syncDot" title="Estado de sincronización"></span>
+    <span class="hdr-stat" id="hdrStat"></span>
+    <button class="modo-badge escritura" id="modoBtn" title="Cambiar modo">✏️ ESCRITURA</button>
+  </div>
+</header>
+
+<nav class="main-tabs">
+  <button class="mtab active" data-view="carga">📥 Cargar turnos</button>
+  <button class="mtab" data-view="general">📊 Análisis general</button>
+</nav>
+
+<!-- VISTA CARGA -->
+<div class="mview active" id="view-carga">
+  <div class="carga-layout">
+
+    <aside class="form-panel">
+      <div class="sec-title">Carga de diagnósticos</div>
+
+      <!-- Solo visible en modo escritura -->
+      <div id="formEscritura">
+        <div class="hint">
+          <b>¿Cómo funciona?</b><br>
+          1. Mandame los PDFs en el chat de Claude<br>
+          2. Te doy los diagnósticos listos<br>
+          3. Los pegás acá de una sola vez<br>
+          4. Se guardan en Firebase automáticamente<br><br>
+          <b>Formato:</b><br>
+          <span class="cmd">📅 DD/MM/AAAA — GRUPO X TM/TN</span><br>
+          <span class="cmd">EQUIPO | LÍNEA X | HH:00 | SEV | desc</span><br><br>
+          <b>SEV:</b> PARADA · ALERTA · PENDIENTE · RESUELTO
+        </div>
+        <div class="fg" style="margin-top:10px;">
+          <label>Pegá todos los diagnósticos acá</label>
+          <textarea class="ftarea" id="fDiag" placeholder="📅 02/04/2026 — GRUPO A TN&#10;TRANSPORTE NEUMÁTICO | LÍNEA 3 | 06:00 | PARADA | Atascos reiterados.&#10;&#10;📅 13/04/2026 — GRUPO B TM&#10;EMPACADORA | LÍNEA 7 | 07:00 | PARADA | 31 min falla de corte..."></textarea>
+        </div>
+        <div class="preview-box" id="previewBox" style="margin-top:10px;">
+          <div class="preview-title">✓ Turnos detectados</div>
+          <div id="previewList"></div>
+        </div>
+        <div class="ok-msg" id="okMsg" style="margin-top:8px;"></div>
+        <div class="err-msg" id="errMsg" style="margin-top:8px;"></div>
+        <button class="btn-save" id="btnGuardar" style="margin-top:10px;">
+          <span id="btnIco">💾</span>
+          <span id="btnLbl">GUARDAR TODOS</span>
+        </button>
+      </div>
+
+      <!-- Solo visible en modo lectura -->
+      <div class="readonly-overlay on" id="overlayLectura" style="display:none;">
+        👁 Modo lectura — solo visualización<br>
+        <span style="font-weight:400;font-size:10px;">Los datos se sincronizan en tiempo real</span>
+      </div>
+    </aside>
+
+    <main class="turnos-panel">
+      <div class="turnos-hdr">
+        <span class="turnos-tit" id="turnosTit">Cargando...</span>
+        <button class="btn-ghost" id="btnBorrarTodo">Borrar todo</button>
+      </div>
+      <div class="loading-wrap" id="loadingTurnos">
+        <div class="spinner"></div>
+        <p>Conectando con Firebase...</p>
+      </div>
+      <div class="t-empty" id="tEmpty" style="display:none;">
+        <div class="t-empty-ico">📋</div>
+        <div class="t-empty-txt">
+          Mandame los PDFs en el chat de Claude.<br>
+          Te doy los diagnósticos listos para pegar.<br>
+          La fecha y el turno se detectan automáticamente.
+        </div>
+      </div>
+      <div id="turnosList"></div>
+    </main>
+
+  </div>
+</div>
+
+<!-- VISTA ANÁLISIS GENERAL -->
+<div class="mview" id="view-general">
+  <div class="gen-layout">
+
+    <aside class="anal-panel">
+      <div class="sec-title">Análisis de Claude</div>
+
+      <div id="analFormEscritura">
+        <div class="hint">
+          <b>¿Cómo funciona?</b><br>
+          1. Pedime el análisis en el chat<br>
+          2. Copiás el texto que te doy<br>
+          3. Lo pegás acá y guardás<br>
+          4. Se publica en tiempo real para todos
+        </div>
+        <div class="fg" style="margin-top:10px;flex:1;">
+          <label>Pegá el análisis acá</label>
+          <textarea class="ftarea" id="fAnalisis" style="min-height:300px;" placeholder="Pegá acá el análisis que te dio Claude en el chat..."></textarea>
+        </div>
+        <div class="ok-msg" id="okAnalisis" style="margin-top:8px;"></div>
+        <button class="btn-save" id="btnGuardarAnalisis" style="margin-top:10px;">
+          💾 GUARDAR ANÁLISIS
+        </button>
+        <button class="btn-ghost" id="btnBorrarAnalisis" style="margin-top:8px;width:100%;text-align:center;">
+          Borrar análisis guardado
+        </button>
+      </div>
+
+      <div class="readonly-overlay" id="analOverlayLectura" style="display:none;">
+        👁 Modo lectura<br>
+        <span style="font-weight:400;font-size:10px;">El análisis se actualiza en tiempo real</span>
+      </div>
+    </aside>
+
+    <main class="anal-content">
+      <div class="gen-hdr">
+        <span class="gen-tit">Estado de equipos · L3 y L7</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span class="anal-fecha" id="analFecha"></span>
+          <button class="btn-rean" id="btnRean" style="display:none;">
+            <span id="rIco">⚡</span><span id="rLbl">ANALIZAR AUTO</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="gen-empty" id="genEmpty">
+        <div class="gen-empty-ico">📊</div>
+        <div class="gen-empty-txt">
+          Pedime el análisis en el chat de Claude,<br>
+          copiá el texto y pegalo en el panel izquierdo.
+        </div>
+      </div>
+
+      <div id="analTextoWrap" style="display:none;">
+        <div class="anal-texto-box" id="analTexto"></div>
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore, collection, doc, setDoc, deleteDoc,
+    onSnapshot, query, orderBy, writeBatch, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  // ══ FIREBASE ══
+  const firebaseConfig = {
+    apiKey: "AIzaSyDeTI8mHF5QkNEbgu69L5JMqui-aimFlFM",
+    authDomain: "informeporturno.firebaseapp.com",
+    projectId: "informeporturno",
+    storageBucket: "informeporturno.appspot.com",
+    messagingSenderId: "1080632095129",
+    appId: "1:1080632095129:web:0f1c6abebecc30022a6308"
+  };
+  const app = initializeApp(firebaseConfig, "bitacora");
+  const db  = getFirestore(app);
+
+  const TURNOS_COL = collection(db, "bitacora_l3l7_turnos");
+  const ANAL_DOC   = doc(db, "bitacora_l3l7_config", "analisis");
+
+  // ══ MODO LECTURA / ESCRITURA ══
+  const MODE_KEY = "bitacora_modo_v1";
+  let modoEscritura = false; // Siempre arranca en lectura — requiere contraseña para escribir
+  let turnos = [];
+
+  function applyMode() {
+    const btn = document.getElementById("modoBtn");
+    const formE = document.getElementById("formEscritura");
+    const overlayL = document.getElementById("overlayLectura");
+    const analFormE = document.getElementById("analFormEscritura");
+    const analOverlay = document.getElementById("analOverlayLectura");
+    const borrarBtn = document.getElementById("btnBorrarTodo");
+
+    if (modoEscritura) {
+      btn.textContent = "✏️ ESCRITURA";
+      btn.className = "modo-badge escritura";
+      formE.style.display = "";
+      overlayL.style.display = "none";
+      analFormE.style.display = "";
+      analOverlay.style.display = "none";
+      borrarBtn.disabled = false;
+      // Mostrar botones de eliminar turno
+      document.querySelectorAll(".btn-del").forEach(b => b.style.display = "");
+    } else {
+      btn.textContent = "👁 LECTURA";
+      btn.className = "modo-badge lectura";
+      formE.style.display = "none";
+      overlayL.style.display = "";
+      analFormE.style.display = "none";
+      analOverlay.style.display = "";
+      borrarBtn.disabled = true;
+      document.querySelectorAll(".btn-del").forEach(b => b.style.display = "none");
+    }
+    localStorage.setItem(MODE_KEY, modoEscritura ? "escritura" : "lectura");
+  }
+
+  const PASS = "mg2026"; // ← cambiá esta contraseña cuando quieras
+
+  document.getElementById("modoBtn").addEventListener("click", () => {
+    if (modoEscritura) {
+      modoEscritura = false;
+      applyMode();
+    } else {
+      const input = prompt("Contraseña de escritura:");
+      if (input === null) return;
+      if (input === PASS) {
+        modoEscritura = true;
+        applyMode();
+      } else {
+        alert("Contraseña incorrecta.");
+      }
+    }
+  });
+
+  // ══ SYNC DOT ══
+  function setSyncDot(estado) {
+    const d = document.getElementById("syncDot");
+    d.className = "sync-dot " + estado;
+  }
+
+  // ══ HELPERS ══
+  function fmt(iso) {
+    if (!iso) return "—";
+    const [y,m,d] = iso.split("-").map(Number);
+    return `${String(d).padStart(2,"0")}/${String(m).padStart(2,"0")}/${y}`;
+  }
+  function tcolor(t) {
+    if (!t) return "tbx";
+    if (t.includes("A")) return "tba"; if (t.includes("B")) return "tbb";
+    if (t.includes("C")) return "tbc"; if (t.includes("D")) return "tbd";
+    return "tbx";
+  }
+  function sevIco(s) {
+    const u=(s||"").toUpperCase();
+    if (u==="PARADA"||u==="CRITICO") return "⛔";
+    if (u==="ALERTA") return "🟡";
+    if (u==="PENDIENTE") return "⚠️";
+    if (u==="RESUELTO") return "✅";
+    return "•";
+  }
+  function showMsg(id, msg, tipo="ok") {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.style.background = tipo==="err" ? "#fff0f0" : "";
+    el.style.borderColor = tipo==="err" ? "#fca5a5" : "";
+    el.style.color = tipo==="err" ? "var(--dang)" : "";
+    el.classList.add("on");
+    setTimeout(() => { el.classList.remove("on"); el.style=""; }, 4000);
+  }
+
+  // ══ PARSEAR BLOQUE MASIVO ══
+  function parsearMasivo(txt) {
+    const bloques = [];
+    const lineas = txt.split("\n");
+    let actual = null;
+    for (const raw of lineas) {
+      const l = raw.trim();
+      if (!l) continue;
+      const esEnc = /📅/.test(l) || /\d{2}\/\d{2}\/\d{4}.*(GRUPO|TURNO)/i.test(l);
+      if (esEnc) {
+        if (actual) bloques.push(actual);
+        actual = { ...extraerEnc(l), eventos: [] };
+        continue;
+      }
+      if (actual && l.includes("|")) {
+        const p = l.split("|").map(x=>x.trim());
+        if (p.length >= 5) {
+          actual.eventos.push({
+            equipo: p[0].replace(/\*/g,"").toUpperCase(),
+            linea:  p[1].toUpperCase(),
+            hora:   p[2],
+            sev:    p[3].toUpperCase(),
+            descripcion: p.slice(4).join(" | ").replace(/\*/g,"")
+          });
+        }
+      }
+    }
+    if (actual) bloques.push(actual);
+    return bloques;
+  }
+
+  function extraerEnc(l) {
+    const s = l.replace(/\*\*/g,"").replace(/📅/g,"").trim();
+    let fecha = "";
+    const m1 = s.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    const m2 = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (m1) fecha = `${m1[3]}-${m1[2]}-${m1[1]}`;
+    else if (m2) fecha = `${m2[1]}-${m2[2]}-${m2[3]}`;
+    const mt = s.match(/GRUPO\s+([ABCD])|TURNO\s+([ABCD])/i);
+    const turno = mt ? `GRUPO ${(mt[1]||mt[2]).toUpperCase()}` : "";
+    const tn = /\bTN\b/i.test(s) ? "TN" : /\bTM\b/i.test(s) ? "TM" : "";
+    return { fecha, turno, tn };
+  }
+
+  // ══ PREVIEW ══
+  let parseadoActual = [];
+  document.getElementById("fDiag").addEventListener("input", () => {
+    const txt = document.getElementById("fDiag").value.trim();
+    if (!txt) { document.getElementById("previewBox").classList.remove("on"); parseadoActual=[]; return; }
+    parseadoActual = parsearMasivo(txt);
+    const box = document.getElementById("previewBox");
+    const list = document.getElementById("previewList");
+    list.innerHTML = "";
+    if (!parseadoActual.length) { box.classList.remove("on"); return; }
+    box.classList.add("on");
+    parseadoActual.forEach(b => {
+      const item = document.createElement("div");
+      item.className = "preview-item";
+      item.innerHTML = `
+        <span class="pi-fecha">${b.fecha ? fmt(b.fecha) : "⚠ sin fecha"}</span>
+        <span class="pi-turno">${b.turno||"⚠"} ${b.tn||""}</span>
+        <span class="pi-ev">${b.eventos.length} eventos</span>`;
+      list.appendChild(item);
+    });
+    document.getElementById("btnLbl").textContent = `GUARDAR ${parseadoActual.length} TURNO${parseadoActual.length!==1?"S":""}`;
+  });
+
+  // ══ GUARDAR TURNOS EN FIREBASE ══
+  document.getElementById("btnGuardar").addEventListener("click", async () => {
+    if (!parseadoActual.length) { showMsg("errMsg","Pegá el diagnóstico primero.","err"); return; }
+    const sinFecha = parseadoActual.filter(b=>!b.fecha);
+    if (sinFecha.length) { showMsg("errMsg",`${sinFecha.length} turno(s) sin fecha detectada.`,"err"); return; }
+
+    const btn = document.getElementById("btnGuardar");
+    btn.disabled = true;
+    setSyncDot("syncing");
+
+    try {
+      const batch = writeBatch(db);
+      let guardados = 0;
+      for (const b of parseadoActual) {
+        const id = `${b.fecha}_${b.turno.replace(/\s+/g,"_")}_${b.tn||"X"}`;
+        const yaExiste = turnos.find(t => t.id === id);
+        if (yaExiste) continue; // saltar duplicados silenciosamente
+        batch.set(doc(TURNOS_COL, id), {
+          fecha: b.fecha,
+          turno: b.turno,
+          tn: b.tn,
+          raw: b.eventos.map(e=>`${e.equipo} | ${e.linea} | ${e.hora} | ${e.sev} | ${e.descripcion}`).join("\n"),
+          eventos: b.eventos,
+          createdAt: serverTimestamp()
+        });
+        guardados++;
+      }
+      await batch.commit();
+      setSyncDot("ok");
+      showMsg("okMsg", `✓ ${guardados} turno${guardados!==1?"s":""} guardado${guardados!==1?"s":""} en Firebase`);
+      document.getElementById("fDiag").value = "";
+      document.getElementById("previewBox").classList.remove("on");
+      parseadoActual = [];
+      document.getElementById("btnLbl").textContent = "GUARDAR TODOS";
+    } catch(e) {
+      setSyncDot("err");
+      showMsg("errMsg", "Error al guardar: " + e.message, "err");
+      console.error(e);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ══ BORRAR TODO ══
+  document.getElementById("btnBorrarTodo").addEventListener("click", async () => {
+    if (!confirm(`¿Borrar los ${turnos.length} turnos de la bitácora? Esta acción no se puede deshacer.`)) return;
+    setSyncDot("syncing");
+    try {
+      const batch = writeBatch(db);
+      turnos.forEach(t => batch.delete(doc(TURNOS_COL, t.id)));
+      await batch.commit();
+      setSyncDot("ok");
+    } catch(e) { setSyncDot("err"); console.error(e); }
+  });
+
+  // ══ RENDER TURNOS ══
+  function renderTurnos() {
+    const lista = document.getElementById("turnosList");
+    const empty = document.getElementById("tEmpty");
+    const loading = document.getElementById("loadingTurnos");
+    loading.style.display = "none";
+    lista.innerHTML = "";
+    empty.style.display = turnos.length === 0 ? "" : "none";
+
+    const ev_total = turnos.reduce((s,t)=>s+(t.eventos?.length||0),0);
+    document.getElementById("hdrStat").textContent = turnos.length > 0 ? `${turnos.length} turno${turnos.length!==1?"s":""} · ${ev_total} eventos` : "";
+    document.getElementById("turnosTit").textContent = `${turnos.length} turno${turnos.length!==1?"s":""} cargado${turnos.length!==1?"s":""}`;
+
+    [...turnos].sort((a,b)=>b.fecha.localeCompare(a.fecha)).forEach(t => {
+      const evs = t.eventos||[];
+      const paradas = evs.filter(e=>["PARADA","CRITICO"].includes((e.sev||"").toUpperCase())).length;
+      const alertas = evs.filter(e=>(e.sev||"").toUpperCase()==="ALERTA").length;
+      const pend    = evs.filter(e=>(e.sev||"").toUpperCase()==="PENDIENTE").length;
+      let chips = "";
+      if (paradas>0) chips+=`<span class="chip ch-r">⛔ ${paradas}</span>`;
+      if (alertas>0) chips+=`<span class="chip ch-w">⚠ ${alertas}</span>`;
+      if (pend>0)    chips+=`<span class="chip ch-w">🔖 ${pend}</span>`;
+      if (evs.length===0) chips=`<span class="chip ch-g">sin eventos</span>`;
+
+      const card = document.createElement("div");
+      card.className = "tcard";
+      card.innerHTML = `
+        <div class="tcard-hdr">
+          <div class="tcard-left">
+            <span class="tbadge ${tcolor(t.turno)}">${(t.turno||"?").replace("GRUPO ","G")}</span>
+            ${t.tn?`<span class="tnbadge">${t.tn}</span>`:""}
+            <span class="tfecha">${fmt(t.fecha)}</span>
+            <div class="chips">${chips}</div>
+          </div>
+          <div class="tcard-right">
+            <button class="btn-del" data-id="${t.id}" style="${modoEscritura?"":"display:none"}">×</button>
+            <span class="ttoggle" style="color:#aaa;">▼</span>
+          </div>
+        </div>
+        <div class="tcard-body">${buildBody(t)}</div>`;
+
+      card.querySelector(".tcard-hdr").addEventListener("click", e => {
+        if (e.target.classList.contains("btn-del")) return;
+        card.classList.toggle("open");
+      });
+      card.querySelector(".btn-del").addEventListener("click", async () => {
+        if (!confirm("¿Eliminar este turno?")) return;
+        setSyncDot("syncing");
+        try {
+          await deleteDoc(doc(TURNOS_COL, t.id));
+          setSyncDot("ok");
+        } catch(e) { setSyncDot("err"); console.error(e); }
+      });
+      lista.appendChild(card);
+    });
+  }
+
+  function buildBody(t) {
+    const evs = t.eventos||[];
+    if (!evs.length) return `<div style="font-family:var(--mono);font-size:11px;color:var(--t3);padding:8px 0;">(sin eventos registrados)</div>`;
+    const grp = {};
+    evs.forEach(e => {
+      const k = `${e.equipo}|||${e.linea}`;
+      if (!grp[k]) grp[k] = { equipo:e.equipo, linea:e.linea, items:[] };
+      grp[k].items.push(e);
+    });
+    return Object.values(grp).map(g => {
+      const lc = g.linea.includes("3") ? "ld3" : "ld7";
+      return `<div class="eq-block">
+        <div class="eq-nombre"><span class="ldot ${lc}"></span>${g.equipo} · <span style="color:var(--t3)">${g.linea}</span></div>
+        ${g.items.map(ev=>`<div class="ev-item">
+          <span class="ev-hora">${ev.hora}</span>
+          <span class="ev-sev">${sevIco(ev.sev)}</span>
+          <span class="ev-txt">${ev.descripcion}</span>
+        </div>`).join("")}
+      </div>`;
+    }).join("");
+  }
+
+  // ══ ANÁLISIS ══
+  function markdownToHtml(txt) {
+    if (!txt) return "";
+    let h = txt
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
+      .replace(/^# (.+)$/gm,"<h1>$1</h1>")
+      .replace(/^## (.+)$/gm,"<h2>$1</h2>")
+      .replace(/^### (.+)$/gm,"<h3>$1</h3>")
+      .replace(/^---+$/gm,"<hr>")
+      .replace(/^- (.+)$/gm,"<li>$1</li>")
+      .replace(/(<li>.*?<\/li>\n?)+/gs, m=>`<ul>${m}</ul>`)
+      .replace(/`(.+?)`/g,"<code>$1</code>")
+      .replace(/^\|(.+)\|$/gm, m => {
+        const cells = m.split("|").filter(c=>c.trim()&&!/^[-: ]+$/.test(c.trim()));
+        return cells.length ? `<tr>${cells.map(c=>`<td>${c.trim()}</td>`).join("")}</tr>` : "";
+      })
+      .replace(/(<tr>.*?<\/tr>\n?)+/gs, m => {
+        const rows = m.trim().split("\n").filter(r=>r.includes("<tr>"));
+        const withH = rows.map((r,i)=>i===0?r.replace(/<td>/g,"<th>").replace(/<\/td>/g,"</th>"):r).join("");
+        return `<table>${withH}</table>`;
+      })
+      .replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>");
+    return `<p>${h}</p>`;
+  }
+
+  function renderAnalisis(data) {
+    if (!data || !data.texto) {
+      document.getElementById("analTextoWrap").style.display = "none";
+      document.getElementById("genEmpty").style.display = "";
+      document.getElementById("analFecha").textContent = "";
+      return;
+    }
+    document.getElementById("genEmpty").style.display = "none";
+    document.getElementById("analTextoWrap").style.display = "";
+    document.getElementById("analFecha").textContent = data.fecha || "";
+    document.getElementById("analTexto").innerHTML = markdownToHtml(data.texto);
+  }
+
+  document.getElementById("btnGuardarAnalisis").addEventListener("click", async () => {
+    const txt = document.getElementById("fAnalisis").value.trim();
+    if (!txt) { showMsg("okAnalisis","Pegá el análisis antes de guardar.","err"); return; }
+    const data = {
+      texto: txt,
+      fecha: `Actualizado el ${new Date().toLocaleDateString("es-AR")} a las ${new Date().toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}`
+    };
+    setSyncDot("syncing");
+    try {
+      await setDoc(ANAL_DOC, data);
+      setSyncDot("ok");
+      showMsg("okAnalisis","✓ Análisis guardado y publicado");
+      document.getElementById("fAnalisis").value = "";
+    } catch(e) {
+      setSyncDot("err");
+      showMsg("okAnalisis","Error: " + e.message, "err");
+    }
+  });
+
+  document.getElementById("btnBorrarAnalisis").addEventListener("click", async () => {
+    if (!confirm("¿Borrar el análisis guardado?")) return;
+    setSyncDot("syncing");
+    try {
+      await deleteDoc(ANAL_DOC);
+      setSyncDot("ok");
+    } catch(e) { setSyncDot("err"); }
+  });
+
+  // ══ MAIN TABS ══
+  document.querySelectorAll(".mtab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".mtab").forEach(t=>t.classList.remove("active"));
+      document.querySelectorAll(".mview").forEach(v=>v.classList.remove("active"));
+      tab.classList.add("active");
+      document.getElementById("view-"+tab.dataset.view).classList.add("active");
+    });
+  });
+
+  // ══ LISTENERS FIREBASE EN TIEMPO REAL ══
+  // Turnos
+  onSnapshot(query(TURNOS_COL, orderBy("fecha","desc")), snap => {
+    turnos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    setSyncDot("ok");
+    renderTurnos();
+    applyMode();
+  }, err => {
+    setSyncDot("err");
+    console.error("Error Firebase turnos:", err);
+    document.getElementById("loadingTurnos").innerHTML = `<p style="color:var(--dang)">Error al conectar: ${err.message}</p>`;
+  });
+
+  // Análisis
+  onSnapshot(ANAL_DOC, snap => {
+    renderAnalisis(snap.exists() ? snap.data() : null);
+  }, err => console.error("Error Firebase análisis:", err));
+
+  // ══ INICIO ══
+  applyMode();
+</script>
+</body>
+</html>
