@@ -198,8 +198,38 @@
     .gen-empty-txt{font-family:var(--mono);font-size:12px;color:var(--t3);line-height:1.8;}
 
     @media(max-width:768px){
+      /* Layout */
       .carga-layout,.gen-layout{grid-template-columns:1fr;}
       .form-panel,.anal-panel{position:static;height:auto;}
+
+      /* Header mobile — dos filas */
+      .hdr{height:auto;flex-wrap:wrap;padding:8px 12px;gap:6px;}
+      .hdr-left{flex:1;min-width:0;}
+      .hdr-title{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;}
+      .hdr-right{width:100%;display:flex;justify-content:space-between;align-items:center;padding-top:4px;border-top:1px solid #222;}
+      .hdr-stat{font-size:10px;}
+      .btn-actualizar{font-size:10px;padding:4px 10px;}
+      .modo-badge{font-size:10px;padding:4px 10px;}
+
+      /* Tabs mobile */
+      .main-tabs{padding:0;}
+      .mtab{flex:1;text-align:center;padding:10px 8px;font-size:11px;letter-spacing:0;}
+
+      /* Análisis texto mobile */
+      .anal-texto-box{padding:16px;}
+      .anal-texto-box h1{font-size:15px;}
+      .anal-texto-box h2{font-size:13px;}
+      .anal-texto-box table{font-size:11px;display:block;overflow-x:auto;}
+
+      /* Sec title */
+      .sec-title{font-size:9px;}
+
+      /* Turnos cards mobile */
+      .tcard-hdr{padding:8px 10px;}
+      .tfecha{font-size:12px;}
+
+      /* Hint mobile */
+      .hint{font-size:9px;}
     }
   </style>
 </head>
@@ -207,7 +237,7 @@
 
 <header class="hdr">
   <div class="hdr-left">
-    <div style="display:flex;gap:5px;">
+    <div style="display:flex;gap:5px;flex-shrink:0;">
       <span class="bl bl3">L3</span>
       <span class="bl bl7">L7</span>
     </div>
